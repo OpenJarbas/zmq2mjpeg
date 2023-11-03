@@ -1,0 +1,6 @@
+imutils
+opencv_python
+imagezmq
+# ovos-PHAL-sensors
+# flask
+# tensorflow
