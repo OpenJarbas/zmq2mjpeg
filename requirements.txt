@@ -1,6 +1,6 @@
 imutils
 opencv_python
 imagezmq
-# ovos-PHAL-sensors
-# flask
+ovos-PHAL-sensors
+flask
 # tensorflow
