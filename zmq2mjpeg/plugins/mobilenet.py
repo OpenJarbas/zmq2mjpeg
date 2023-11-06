@@ -2,11 +2,14 @@
 # MIT License
 
 import colorsys
+import os
 import random
 
 import cv2
 import numpy as np
+from ovos_PHAL_sensors.loggers import HomeAssistantUpdater
 
+from zmq2mjpeg.cam import CamReader
 
 try:
     import tensorflow.lite as tflite
@@ -14,11 +17,12 @@ except:
     import tflite_runtime.interpreter as tflite
 
 
-class ObjDetect:
-    def __init__(self, model_path, valid_labels=None, min_score=0.6):
+class SSDLiteMobileNetV2:
+    def __init__(self, valid_labels=None, model_path=None, min_score=0.6, publish_sensors=True, n_frames=3):
         self.min_score = min_score
         self.valid_labels = valid_labels or []
         # Load TFLite model and allocate tensors.
+        model_path = model_path or f"{os.path.dirname(__file__)}/ssdlite_mobilenet_v2.tflite"
         self.interpreter = tflite.Interpreter(model_path=model_path)
         self.interpreter.allocate_tensors()
 
@@ -40,6 +44,35 @@ class ObjDetect:
                             'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush']
         # Generate colors for drawing bounding boxes.
         self.colors = self.generate_colors(self.class_names)
+
+        self.publish_sensors = publish_sensors
+        self.n_frames = n_frames
+        self._COUNTS = {l: 0 for l in self.valid_labels}
+
+    def _process_detections(self, name, preds):
+        detections = list(preds.keys())
+        for label, conf in preds.items():
+            # print(label, conf, self._COUNTS[label])
+            if self._COUNTS[label] <= self.n_frames:
+                self._COUNTS[label] += 1
+            if self._COUNTS[label] >= self.n_frames:
+                if not CamReader.cameras[name].sensors[label].detected:
+                    print("DETECTED:", label, conf)
+                    CamReader.cameras[name].sensors[label].detected = True
+                    if self.publish_sensors:
+                        HomeAssistantUpdater.binary_sensor_update(CamReader.cameras[name].sensors[label])
+                CamReader.cameras[name].sensors[label].confidence = conf
+        for label in self._COUNTS:
+            if label not in detections:
+                if self._COUNTS[label] > 0:
+                    self._COUNTS[label] -= 1
+                    CamReader.cameras[name].sensors[label].confidence -= 0.1
+                if self._COUNTS[label] <= 0 and CamReader.cameras[name].sensors[label].detected:
+                    print("LOST DETECTION:", label)
+                    CamReader.cameras[name].sensors[label].detected = False
+                    if self.publish_sensors:
+                        HomeAssistantUpdater.binary_sensor_update(CamReader.cameras[name].sensors[label])
+                CamReader.cameras[name].sensors[label].confidence = 0
 
     @staticmethod
     def generate_colors(class_names):
@@ -67,7 +100,6 @@ class ObjDetect:
         image = np.expand_dims(image, axis=0)
         image = (2.0 / 255.0) * image - 1.0
         image = image.astype('float32')
-
         return image
 
     @staticmethod
@@ -146,7 +178,7 @@ class ObjDetect:
 
         return out_scores, out_boxes, out_classes
 
-    def detect_frame(self, frame, draw=False):
+    def detect_frame(self, rpi_name, frame, draw=False):
         image_data = self.preprocess_image_for_tflite(frame, model_image_size=300)
         out_scores, out_boxes, out_classes = self.run_detection(image_data)
         detections = {}
@@ -162,5 +194,12 @@ class ObjDetect:
         if draw:  # modifies frame object
             self.draw_boxes(frame, out_scores, out_boxes, out_classes)
 
+        self._process_detections(rpi_name, detections)
         return detections
 
+    def transform(self, frame, context):
+        name = context["camera_name"]
+        draw = context.get("draw", True)
+        preds = self.detect_frame(name, frame, draw=draw)
+        context["ssdlite_mobilenet_v2"] = preds
+        return frame, context
