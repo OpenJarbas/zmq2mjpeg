@@ -9,7 +9,7 @@ from zmq2mjpeg.plugins.cvlib_yolo import detect_common_objects, classes
 
 
 class YOLO:
-    def __init__(self, valid_labels=None, min_score=0.5, publish_sensors=True, n_frames=3):
+    def __init__(self, valid_labels=None, min_score=0.3, publish_sensors=True, n_frames=3):
         self.min_score = min_score
         self.valid_labels = valid_labels or []
 
@@ -96,13 +96,8 @@ class YOLO:
                 continue
             detections[predicted_class] = score
 
-        # print(rpi_name, detections)
-        cv2.imshow(rpi_name, frame)
-        cv2.waitKey(1)
         if draw:  # modifies frame object
             self.draw_boxes(frame, out_scores, out_boxes, out_classes)
-        cv2.imshow(rpi_name + "_detected", frame)
-        cv2.waitKey(1)
 
         self._process_detections(rpi_name, detections)
         return detections
