@@ -4,7 +4,6 @@ from ovos_PHAL_sensors.loggers import HomeAssistantUpdater
 
 from zmq2mjpeg.cam import CamReader
 
-
 HA_URL = "http://192.168.1.8:8123"
 HA_TOKEN = "ey5MTMxNDgwODAyMmRmMiIs..."
 

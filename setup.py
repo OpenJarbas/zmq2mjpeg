@@ -72,7 +72,7 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     entry_points={'console_scripts': [
-                      'zmq2mjpeg=zmq2mjpeg.server:main'
-                  ]
+        'zmq2mjpeg=zmq2mjpeg.server:main'
+    ]
     }
 )

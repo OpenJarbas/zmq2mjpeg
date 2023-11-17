@@ -20,8 +20,10 @@ class CameraState:
 class CamTransformers:
     def __init__(self, plugins=None):
         if not plugins:  # TODO - OPM integration
-            from zmq2mjpeg.plugins.mobilenet import SSDLiteMobileNetV2
-            plugins = [SSDLiteMobileNetV2(valid_labels=["person", "cat", "dog"])]
+            # from zmq2mjpeg.plugins.mobilenet import SSDLiteMobileNetV2
+            # plugins = [SSDLiteMobileNetV2(valid_labels=["person", "cat", "dog"])]
+            from zmq2mjpeg.plugins.yolo import YOLO
+            plugins = [YOLO(valid_labels=["person", "cat", "dog"])]
         self.plugins = plugins
 
     def transform(self, frame, context=None):
@@ -40,21 +42,24 @@ class CamReader(Thread):
         self.transformers = CamTransformers()
 
     def run(self) -> None:
+        prev = None, None
         while True:
 
             rpi_name, jpg_buffer = self.image_hub.recv_jpg()
             frame = simplejpeg.decode_jpeg(jpg_buffer, colorspace='BGR')
-
             self.image_hub.send_reply(b'OK')
+            if prev and (prev[1] == frame).all():
+                continue  # no parsing repeat frames needed
 
             if rpi_name not in self.cameras:
-                self.cameras[rpi_name] = CameraState(rpi_name, frame)
+                CamReader.cameras[rpi_name] = CameraState(rpi_name, frame)
 
             frame, _ = self.transformers.transform(frame, {"camera_name": rpi_name})
 
-            self.cameras[rpi_name].last_frame = frame
+            CamReader.cameras[rpi_name].last_frame = frame
+            prev = rpi_name, frame
 
     def get(self, name):
-        cam = self.cameras.get(name)
+        cam = CamReader.cameras.get(name)
         if cam:
             return cam.last_frame

@@ -18,7 +18,7 @@ except:
 
 
 class SSDLiteMobileNetV2:
-    def __init__(self, valid_labels=None, model_path=None, min_score=0.6, publish_sensors=True, n_frames=3):
+    def __init__(self, valid_labels=None, model_path=None, min_score=0.7, publish_sensors=True, n_frames=3):
         self.min_score = min_score
         self.valid_labels = valid_labels or []
         # Load TFLite model and allocate tensors.
@@ -83,15 +83,6 @@ class SSDLiteMobileNetV2:
         random.shuffle(colors)  # Shuffle colors to decorrelate adjacent classes.
         random.seed(None)  # Reset seed to default.
         return colors
-
-    @staticmethod
-    def preprocess_image(image, model_image_size=(300, 300)):
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        # image = cv2.resize(image, tuple(reversed(model_image_size)), interpolation=cv2.INTER_AREA)
-        image = np.array(image, dtype='float32')
-        image = np.expand_dims(image, 0)  # Add batch dimension.
-
-        return image
 
     @staticmethod
     def preprocess_image_for_tflite(image, model_image_size=300):
