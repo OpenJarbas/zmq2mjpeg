@@ -9,7 +9,7 @@ from zmq2mjpeg.plugins.cvlib_yolo import detect_common_objects, classes
 
 
 class YOLO:
-    def __init__(self, valid_labels=None, min_score=0.7, publish_sensors=True, n_frames=3):
+    def __init__(self, valid_labels=None, min_score=0.5, publish_sensors=True, n_frames=3):
         self.min_score = min_score
         self.valid_labels = valid_labels or []
 
@@ -86,7 +86,7 @@ class YOLO:
         return image
 
     def detect_frame(self, rpi_name, frame, draw=False):
-        out_boxes, out_classes, out_scores = detect_common_objects(frame, confidence=0.25,
+        out_boxes, out_classes, out_scores = detect_common_objects(frame, confidence=self.min_score,
                                                                    model='yolov3-tiny')
         detections = {}
         for predicted_class, score in zip(out_classes, out_scores):
