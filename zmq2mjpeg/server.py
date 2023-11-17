@@ -12,6 +12,11 @@ HA_TOKEN = "ey5MTMxNDgwODAyMmRmMiIs..."
 def get_app():
     app = Flask(__name__)
 
+    from ovos_config import Configuration
+    conf = Configuration().get("PHAL", {}).get("ovos-PHAL-sensors", {})
+    HA_URL = conf.get("ha_host")
+    HA_TOKEN = conf.get("ha_token")
+
     HomeAssistantUpdater.ha_url = HA_URL
     HomeAssistantUpdater.ha_token = HA_TOKEN
 

@@ -1,6 +1,7 @@
 from threading import Thread
 
 import imagezmq
+import simplejpeg
 
 from zmq2mjpeg.sensors import CatDetectSensor, DogDetectSensor, PersonDetectSensor
 
@@ -41,7 +42,9 @@ class CamReader(Thread):
     def run(self) -> None:
         while True:
 
-            rpi_name, frame = self.image_hub.recv_image()
+            rpi_name, jpg_buffer = self.image_hub.recv_jpg()
+            frame = simplejpeg.decode_jpeg(jpg_buffer, colorspace='BGR')
+
             self.image_hub.send_reply(b'OK')
 
             if rpi_name not in self.cameras:

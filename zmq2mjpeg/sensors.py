@@ -1,6 +1,6 @@
 import dataclasses
 
-from ovos_PHAL_sensors.base import BooleanSensor
+from ovos_PHAL_sensors.sensors.base import BooleanSensor
 
 
 @dataclasses.dataclass
