@@ -3,4 +3,5 @@ opencv_python
 imagezmq
 ovos-PHAL-sensors
 flask
+simplejpeg
 # tensorflow
